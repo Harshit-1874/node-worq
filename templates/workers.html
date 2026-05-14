@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section aria-label="Worker health">
+    <h2>Worker Health</h2>
+    <p class="section-desc">Shows which queues have active workers. ARQ reports one health-check per queue, not per worker process.</p>
+    {% if worker_health %}
+    <div class="table-responsive">
+        <table aria-label="Worker health table">
+            <thead>
+                <tr>
+                    <th scope="col">Queue</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Last Heartbeat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for wh in worker_health %}
+                <tr>
+                    <td><code>{{ wh.queue_name }}</code></td>
+                    <td>
+                        {% if wh.status == "ALIVE" %}
+                        <span class="badge badge-complete">ALIVE</span>
+                        {% else %}
+                        <span class="badge badge-failed">NO WORKERS</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if wh.last_heartbeat %}
+                        {{ wh.last_heartbeat | dt }}
+                        {% else %}
+                        <span class="text-muted">&mdash;</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No queues configured.</p>
+    {% endif %}
+</section>
+
+<section aria-label="Active jobs">
+    <h2>Active Jobs</h2>
+    <p class="section-desc">Jobs currently being executed by workers. This data is accurate — each active job has its own Redis key.</p>
+    {% if active_jobs %}
+    <div class="table-responsive">
+        <table aria-label="Active jobs table">
+            <thead>
+                <tr>
+                    <th scope="col">Function</th>
+                    <th scope="col">Job ID</th>
+                    <th scope="col">Queue</th>
+                    <th scope="col">Running For</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in active_jobs %}
+                <tr>
+                    <td>
+                        <a href="{{ rootPath }}/jobs/{{ job.job_id }}">
+                            <code>{{ job.function_name }}</code>
+                        </a>
+                    </td>
+                    <td><code class="text-muted">{{ job.job_id | shortid }}</code></td>
+                    <td>{{ job.queue_name }}</td>
+                    <td>
+                        {% if job.running_for_seconds > 300 %}
+                        <span class="badge badge-failed">{{ job.running_for_seconds | round }}s</span>
+                        {% elif job.running_for_seconds > 60 %}
+                        <span class="badge badge-scheduled">{{ job.running_for_seconds | round }}s</span>
+                        {% else %}
+                        {{ job.running_for_seconds | round(1) }}s
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No jobs currently executing.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section aria-label="Failed jobs list">
+    <form class="search-bar" method="get" action="{{ rootPath }}/failed" aria-label="Search failed jobs">
+        <input type="search" name="q" placeholder="Search by function name..." value="{{ q or '' }}" aria-label="Search query">
+        <button type="submit" class="btn btn-sm">Search</button>
+    </form>
+    {% if failed_jobs %}
+
+    {% if allowWrite %}
+    <div class="bulk-bar" id="bulk-bar" style="display:none">
+        <span id="bulk-count">0</span> selected
+        <button type="button" class="btn btn-sm" onclick="bulkAction('retry')" aria-label="Retry selected jobs">Retry Selected</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="bulkAction('delete')" aria-label="Delete selected jobs">Delete Selected</button>
+    </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table aria-label="Failed jobs table">
+            <thead>
+                <tr>
+                    {% if allowWrite %}
+                    <th scope="col"><input type="checkbox" aria-label="Select all jobs" onchange="toggleAll(this)"></th>
+                    {% endif %}
+                    <th scope="col">Function</th>
+                    <th scope="col">Error</th>
+                    <th scope="col">Failed At</th>
+                    <th scope="col">Attempts</th>
+                    {% if allowWrite %}
+                    <th scope="col">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in failed_jobs %}
+                <tr id="row-{{ job.job_id }}">
+                    {% if allowWrite %}
+                    <td><input type="checkbox" class="job-checkbox" value="{{ job.job_id }}" onchange="updateBulkBar()" aria-label="Select job {{ job.function_name }}"></td>
+                    {% endif %}
+                    <td>
+                        <a href="{{ rootPath }}/jobs/{{ job.job_id }}">
+                            <code>{{ job.function_name }}</code>
+                        </a>
+                    </td>
+                    <td>
+                        <details>
+                            <summary class="error-preview">
+                                {% if job.error and ("unable to serialize" in (job.error | lower)) %}
+                                <span class="text-muted">Error not serializable — check worker logs</span>
+                                {% else %}
+                                {{ job.error | truncate(80) }}
+                                {% endif %}
+                            </summary>
+                            {% if job.traceback %}
+                            <pre class="traceback" aria-label="Full traceback for {{ job.function_name }}">{{ job.traceback }}</pre>
+                            {% else %}
+                            <p class="text-muted" style="padding: 8px 0; font-size: 0.8rem;">No traceback available — check worker logs.</p>
+                            {% endif %}
+                        </details>
+                    </td>
+                    <td>{{ job.failed_at | dt }}</td>
+                    <td>{{ job.job_try }}</td>
+                    {% if allowWrite %}
+                    <td class="actions">
+                        <button type="button" class="btn btn-sm"
+                            hx-post="{{ rootPath }}/api/jobs/{{ job.job_id }}/retry"
+                            hx-target="#row-{{ job.job_id }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Retry this job?"
+                            aria-label="Retry job {{ job.function_name }}">Retry</button>
+                        <button type="button" class="btn btn-sm btn-danger"
+                            hx-delete="{{ rootPath }}/api/jobs/{{ job.job_id }}"
+                            hx-target="#row-{{ job.job_id }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Delete this job?"
+                            aria-label="Delete job {{ job.function_name }}">Delete</button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include "pagination.html" %}
+    {% else %}
+    <p class="empty-state">No failed jobs.</p>
+    {% endif %}
+</section>
+
+{% if allowWrite %}
+<script>
+function toggleAll(master) {
+    document.querySelectorAll('.job-checkbox').forEach(function(cb) { cb.checked = master.checked; });
+    updateBulkBar();
+}
+function updateBulkBar() {
+    var checked = document.querySelectorAll('.job-checkbox:checked');
+    var bar = document.getElementById('bulk-bar');
+    var count = document.getElementById('bulk-count');
+    if (checked.length > 0) {
+        bar.style.display = 'flex';
+        count.textContent = checked.length;
+    } else {
+        bar.style.display = 'none';
+    }
+}
+function bulkAction(action) {
+    var ids = Array.from(document.querySelectorAll('.job-checkbox:checked')).map(function(cb) { return cb.value; });
+    if (ids.length === 0) return;
+    var msg = action === 'delete' ? 'Delete ' + ids.length + ' jobs?' : 'Retry ' + ids.length + ' jobs?';
+    if (!confirm(msg)) return;
+    var base = document.querySelector("meta[name='worq-base-path']");
+    var basePath = base ? base.getAttribute("content").replace(/\/$/, "") : "";
+    fetch(basePath + '/api/bulk/' + action, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({job_ids: ids})
+    }).then(function(r) { return r.json(); })
+    .then(function(data) {
+        alert(data.message || (action + 'ed ' + data.count + ' jobs'));
+        location.reload();
+    }).catch(function() { alert('Action failed'); });
+}
+</script>
+{% endif %}
+{% endblock %}

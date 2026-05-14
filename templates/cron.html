@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section aria-label="Cron jobs">
+    <h2>Cron Jobs</h2>
+    {% if cron_jobs %}
+    <div class="table-responsive">
+        <table aria-label="Cron jobs table">
+            <thead>
+                <tr>
+                    <th scope="col">Function</th>
+                    <th scope="col">Schedule</th>
+                    <th scope="col">Last Run</th>
+                    <th scope="col">Result</th>
+                    <th scope="col">Status</th>
+                    {% if allowWrite %}
+                    <th scope="col">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in cron_jobs %}
+                <tr>
+                    <td><code>{{ job.function_name }}</code></td>
+                    <td><code>{{ job.schedule }}</code></td>
+                    <td>{% if job.last_run %}{{ job.last_run | dt }}{% else %}Never{% endif %}</td>
+                    <td>
+                        {% if job.last_result == "success" %}
+                        <span class="badge badge-complete">success</span>
+                        {% elif job.last_result == "failed" %}
+                        <span class="badge badge-failed">failed</span>
+                        {% else %}
+                        <span class="badge badge-queued">unknown</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.is_running %}
+                        <span class="badge badge-active">RUNNING</span>
+                        {% else %}
+                        <span class="badge badge-queued">IDLE</span>
+                        {% endif %}
+                    </td>
+                    {% if allowWrite %}
+                    <td class="actions">
+                        <button
+                            type="button"
+                            class="btn btn-sm"
+                            hx-post="{{ rootPath }}/api/cron/{{ job.function_name }}/trigger"
+                            hx-swap="outerHTML"
+                            hx-confirm="Trigger '{{ job.function_name }}' now?"
+                            aria-label="Trigger cron job {{ job.function_name }}"
+                        >
+                            Trigger Now
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No cron jobs configured. Pass <code>cron_jobs</code> to your adapter to see them here.</p>
+    {% endif %}
+</section>
+{% endblock %}

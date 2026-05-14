@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="worq-base-path" content="{{ rootPath }}">
+    <title>{% if page_title %}{{ page_title }} — {% endif %}{{ title }}</title>
+    <link rel="stylesheet" href="{{ rootPath }}/static/style.css">
+    <script src="{{ rootPath }}/static/htmx.min.js" defer></script>
+    <script src="{{ rootPath }}/static/ws.js" defer></script>
+    <script>
+        /* Theme init — runs before paint to avoid flash */
+        (function() {
+            try {
+                var saved = localStorage.getItem("worq-theme");
+                if (saved) document.documentElement.setAttribute("data-theme", saved);
+            } catch(e) {}
+        })();
+    </script>
+</head>
+<body>
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+
+    <header class="navbar" role="banner">
+        <div class="navbar-brand">
+            <a href="{{ rootPath }}/" aria-label="Worq Dashboard Home">
+                <strong>Worq</strong>
+            </a>
+        </div>
+        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="this.parentElement.classList.toggle('nav-open'); this.setAttribute('aria-expanded', this.parentElement.classList.contains('nav-open'))">&#9776;</button>
+        <nav class="navbar-links" aria-label="Main navigation">
+            <ul>
+                {% set nav_items = [
+                    ("Dashboard", "/"),
+                    ("Queues", "/queues"),
+                    ("Workers", "/workers"),
+                    ("Scheduled", "/scheduled"),
+                    ("Failed", "/failed"),
+                    ("Cron", "/cron"),
+                ] %}
+                {% set current_path = urlPath %}
+                {% set root = rootPath %}
+                {% for label, path in nav_items %}
+                {% set full_path = root + path if path != "/" else root + "/" %}
+                <li>
+                    <a href="{{ full_path }}"
+                       {% if current_path == full_path.rstrip("/") or (path == "/" and current_path == root) %}
+                       class="nav-active" aria-current="page"
+                       {% endif %}
+                    >{{ label }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        <div class="navbar-actions">
+            <button id="theme-toggle" type="button" aria-label="Toggle dark mode" onclick="toggleTheme()">
+                <span class="theme-icon-dark">Dark</span>
+                <span class="theme-icon-light">Light</span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="container" role="main">
+        <h1>{{ page_title or title }}</h1>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <p>Worq Dashboard</p>
+    </footer>
+
+    <script>
+        function toggleTheme() {
+            var html = document.documentElement;
+            var current = html.getAttribute("data-theme");
+            var next = current === "dark" ? "light" : "dark";
+            html.setAttribute("data-theme", next);
+            try { localStorage.setItem("worq-theme", next); } catch(e) {}
+        }
+    </script>
+</body>
+</html>

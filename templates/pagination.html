@@ -1,0 +1,18 @@
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="Pagination">
+    <div class="pagination-info">
+        Showing page {{ page }} of {{ total_pages }} ({{ total_count }} total)
+    </div>
+    <div class="pagination-controls">
+        {% if page > 1 %}
+        <a href="?page=1{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm" aria-label="First page">First</a>
+        <a href="?page={{ page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm" aria-label="Previous page">← Prev</a>
+        {% endif %}
+        <span class="pagination-current">{{ page }} / {{ total_pages }}</span>
+        {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm" aria-label="Next page">Next →</a>
+        <a href="?page={{ total_pages }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm" aria-label="Last page">Last</a>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}

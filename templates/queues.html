@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section aria-label="Queue breakdown">
+    <h2>Queues</h2>
+    <p class="section-desc">Per-queue breakdown of enqueued (waiting) vs active (running) jobs.</p>
+
+    {% if queues %}
+    <div class="table-responsive">
+        <table aria-label="Queue breakdown table">
+            <thead>
+                <tr>
+                    <th scope="col">Queue</th>
+                    <th scope="col">Enqueued</th>
+                    <th scope="col">Active</th>
+                    <th scope="col">Scheduled</th>
+                    <th scope="col">Failed</th>
+                    <th scope="col">Complete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in queues %}
+                <tr>
+                    <td><code>{{ q.name }}</code></td>
+                    <td>
+                        {% if q.queued > 0 %}
+                        <strong>{{ q.queued }}</strong>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if q.active > 0 %}
+                        <span class="badge badge-active">{{ q.active }}</span>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if q.scheduled > 0 %}
+                        <span class="badge badge-scheduled">{{ q.scheduled }}</span>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if q.failed > 0 %}
+                        <span class="badge badge-failed">{{ q.failed }}</span>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if q.complete > 0 %}
+                        <span class="badge badge-complete">{{ q.complete }}</span>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td><strong>{{ queues | sumattr("queued") }}</strong></td>
+                    <td><strong>{{ queues | sumattr("active") }}</strong></td>
+                    <td><strong>{{ queues | sumattr("scheduled") }}</strong></td>
+                    <td><strong>{{ queues | sumattr("failed") }}</strong></td>
+                    <td><strong>{{ queues | sumattr("complete") }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="queue-legend">
+        <p><strong>Enqueued</strong> = waiting in queue for a free worker. <strong>Active</strong> = currently being executed by a worker.</p>
+    </div>
+    {% else %}
+    <p class="empty-state">No queues found.</p>
+    {% endif %}
+</section>
+{% endblock %}

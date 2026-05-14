@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="job-detail" aria-label="Job detail">
+    <div class="job-header">
+        <h2><code>{{ job.function_name }}</code></h2>
+        <span class="badge badge-{{ job.status }}" aria-label="Status: {{ job.status }}">
+            {{ job.status }}
+        </span>
+    </div>
+
+    <div class="job-meta">
+        <dl>
+            <dt>Job ID</dt>
+            <dd><code>{{ job.job_id }}</code></dd>
+
+            <dt>Queue</dt>
+            <dd>{{ job.queue_name }}</dd>
+
+            <dt>Status</dt>
+            <dd>{{ job.status }}</dd>
+
+            {% if job.job_try %}
+            <dt>Attempt</dt>
+            <dd>{{ job.job_try }}</dd>
+            {% endif %}
+        </dl>
+    </div>
+
+    <div class="job-args">
+        <h3>Arguments</h3>
+        <pre aria-label="Job arguments">{{ job.args | prettyjson }}</pre>
+
+        <h3>Keyword Arguments</h3>
+        <pre aria-label="Job keyword arguments">{{ job.kwargs | prettyjson }}</pre>
+    </div>
+
+    <div class="job-timing">
+        <h3>Timing</h3>
+        <dl>
+            <dt>Enqueued</dt>
+            <dd>{% if job.enqueue_time %}{{ job.enqueue_time | dt }}{% else %}N/A{% endif %}</dd>
+
+            <dt>Started</dt>
+            <dd>{% if job.start_time %}{{ job.start_time | dt }}{% else %}N/A{% endif %}</dd>
+
+            <dt>Finished</dt>
+            <dd>{% if job.finish_time %}{{ job.finish_time | dt }}{% else %}N/A{% endif %}</dd>
+
+            <dt>Duration</dt>
+            <dd>{% if job.duration_ms %}{{ job.duration_ms | round(1) }}ms{% else %}N/A{% endif %}</dd>
+        </dl>
+    </div>
+
+    {% if job.status == "failed" and job.error %}
+    <div class="job-error">
+        <h3>Error</h3>
+        <p class="error-message">{{ job.error }}</p>
+        {% if job.traceback %}
+        <details>
+            <summary>Full Traceback</summary>
+            <button type="button" class="btn btn-sm" onclick="navigator.clipboard.writeText(this.parentElement.querySelector('pre').textContent)" aria-label="Copy traceback">Copy</button>
+            <pre class="traceback" aria-label="Error traceback">{{ job.traceback }}</pre>
+        </details>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if allowWrite %}
+    <div class="job-actions" aria-label="Job actions">
+        {% if job.status == "failed" %}
+        <button
+            type="button"
+            class="btn btn-sm"
+            hx-post="{{ rootPath }}/api/jobs/{{ job.job_id }}/retry"
+            hx-swap="outerHTML"
+            hx-confirm="Retry this job?"
+            aria-label="Retry this job"
+        >
+            Retry
+        </button>
+        {% endif %}
+        <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            hx-delete="{{ rootPath }}/api/jobs/{{ job.job_id }}"
+            hx-swap="outerHTML"
+            hx-confirm="Delete this job?"
+            aria-label="Delete this job"
+        >
+            Delete
+        </button>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

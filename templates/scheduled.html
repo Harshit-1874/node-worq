@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section aria-label="Scheduled jobs list">
+    <form class="search-bar" method="get" action="{{ rootPath }}/scheduled" aria-label="Search scheduled jobs">
+        <input type="search" name="q" placeholder="Search by function name..." value="{{ q or '' }}" aria-label="Search query">
+        <button type="submit" class="btn btn-sm">Search</button>
+    </form>
+    {% if scheduled_jobs %}
+    <div class="table-responsive">
+        <table aria-label="Scheduled jobs table">
+            <thead>
+                <tr>
+                    <th scope="col">Function</th>
+                    <th scope="col">Args</th>
+                    <th scope="col">Scheduled At</th>
+                    <th scope="col">Remaining</th>
+                    {% if allowWrite %}
+                    <th scope="col">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in scheduled_jobs %}
+                <tr id="sched-row-{{ job.job_id }}">
+                    <td>
+                        <a href="{{ rootPath }}/jobs/{{ job.job_id }}">
+                            <code>{{ job.function_name }}</code>
+                        </a>
+                    </td>
+                    <td class="args-preview" title="{{ job.args }}">
+                        {{ job.args | dump | truncate(60) }}
+                    </td>
+                    <td>{{ job.scheduled_at | dt }}</td>
+                    <td>{{ job.remaining_seconds | round }}s</td>
+                    {% if allowWrite %}
+                    <td class="actions">
+                        <button type="button" class="btn btn-sm"
+                            hx-post="{{ rootPath }}/api/scheduled/{{ job.job_id }}/enqueue"
+                            hx-target="#sched-row-{{ job.job_id }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Run this job now?"
+                            aria-label="Run job {{ job.function_name }} now">Run Now</button>
+                        <button type="button" class="btn btn-sm btn-danger"
+                            hx-delete="{{ rootPath }}/api/jobs/{{ job.job_id }}"
+                            hx-target="#sched-row-{{ job.job_id }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Delete this scheduled job?"
+                            aria-label="Delete job {{ job.function_name }}">Delete</button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include "pagination.html" %}
+    {% else %}
+    <p class="empty-state">No scheduled jobs.</p>
+    {% endif %}
+</section>
+{% endblock %}

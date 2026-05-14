@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section id="stats-container" aria-label="Queue statistics">
+    <div class="stat-cards">
+        <div class="stat-card" id="stat-queued" aria-label="Queued jobs count">
+            <span class="stat-label">Enqueued</span>
+            <span class="stat-value" data-stat="queued">{{ queues | sumattr("queued") if queues else 0 }}</span>
+        </div>
+        <div class="stat-card" id="stat-active" aria-label="Active jobs count">
+            <span class="stat-label">Active</span>
+            <span class="stat-value" data-stat="active">{{ queues | sumattr("active") if queues else 0 }}</span>
+        </div>
+        <div class="stat-card" id="stat-scheduled" aria-label="Scheduled jobs count">
+            <span class="stat-label">Scheduled</span>
+            <span class="stat-value" data-stat="scheduled">{{ queues | sumattr("scheduled") if queues else 0 }}</span>
+        </div>
+        <div class="stat-card" id="stat-failed" aria-label="Failed jobs count">
+            <span class="stat-label">Failed</span>
+            <span class="stat-value" data-stat="failed">{{ queues | sumattr("failed") if queues else 0 }}</span>
+        </div>
+        <div class="stat-card" id="stat-complete" aria-label="Complete jobs count">
+            <span class="stat-label">Complete</span>
+            <span class="stat-value" data-stat="complete">{{ queues | sumattr("complete") if queues else 0 }}</span>
+        </div>
+    </div>
+</section>
+
+<section aria-label="Metrics summary">
+    <h2>Throughput (Last 24h)</h2>
+    <div class="metrics-summary">
+        <span>Processed: {{ metrics.total_processed if metrics else 0 }}</span>
+        <span>Failed: {{ metrics.total_failed if metrics else 0 }}</span>
+        <span>Failure Rate: {{ (metrics.failure_rate if metrics else 0) | round(1) }}%</span>
+        <span>Avg Duration: {{ (metrics.avg_duration_ms if metrics else 0) | round(1) }}ms</span>
+    </div>
+    {% if chartBuckets and (chartBuckets | length) %}
+    <div class="metrics-chart" aria-label="Throughput chart">
+        {% for bucket in chartBuckets %}
+        <div class="chart-bar" style="height: {{ (bucket.processed / chartMax * 100) if chartMax > 0 else 0 }}%" title="{{ bucket.processed }} processed at {{ bucket.tsLabel }}"></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+
+<section aria-label="Active jobs">
+    <h2>Active Jobs <span class="text-muted" style="font-size: 0.8rem; font-weight: 400;">(currently executing)</span></h2>
+    {% if active_jobs %}
+    <div class="table-responsive">
+        <table aria-label="Active jobs table">
+            <thead>
+                <tr>
+                    <th scope="col">Function</th>
+                    <th scope="col">Queue</th>
+                    <th scope="col">Running For</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in active_jobs %}
+                {% if loop.index <= 10 %}
+                <tr>
+                    <td>
+                        <a href="{{ rootPath }}/jobs/{{ job.job_id }}">
+                            <code>{{ job.function_name }}</code>
+                        </a>
+                    </td>
+                    <td>{{ job.queue_name }}</td>
+                    <td>
+                        {% if job.running_for_seconds > 300 %}
+                        <span class="badge badge-failed">{{ job.running_for_seconds | round }}s</span>
+                        {% elif job.running_for_seconds > 60 %}
+                        <span class="badge badge-scheduled">{{ job.running_for_seconds | round }}s</span>
+                        {% else %}
+                        {{ job.running_for_seconds | round(1) }}s
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if active_jobs | length > 10 %}
+    <p class="text-muted" style="font-size: 0.85rem; margin-top: 8px;">Showing 10 of {{ active_jobs | length }}. <a href="{{ rootPath }}/workers">View all</a></p>
+    {% endif %}
+    {% else %}
+    <p class="empty-state">No jobs currently executing.</p>
+    {% endif %}
+</section>
+
+<section aria-label="Recent failed jobs">
+    <h2>Recent Failed Jobs</h2>
+    {% if failed_jobs %}
+    <div class="table-responsive">
+        <table aria-label="Recent failed jobs table">
+            <thead>
+                <tr>
+                    <th scope="col">Function</th>
+                    <th scope="col">Error</th>
+                    <th scope="col">Failed At</th>
+                    {% if allowWrite %}
+                    <th scope="col">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in failed_jobs %}
+                {% if loop.index <= 5 %}
+                <tr>
+                    <td>
+                        <a href="{{ rootPath }}/jobs/{{ job.job_id }}">
+                            <code>{{ job.function_name }}</code>
+                        </a>
+                    </td>
+                    <td class="error-preview" title="{{ job.error }}">
+                        {% if job.error and ("unable to serialize" in (job.error | lower)) %}
+                        <span class="text-muted">Error not serializable — check worker logs</span>
+                        {% else %}
+                        {{ job.error | truncate(80) }}
+                        {% endif %}
+                    </td>
+                    <td>{{ job.failed_at | dt }}</td>
+                    {% if allowWrite %}
+                    <td class="actions">
+                        <button
+                            type="button"
+                            class="btn btn-sm"
+                            hx-post="{{ rootPath }}/api/jobs/{{ job.job_id }}/retry"
+                            hx-swap="outerHTML"
+                            hx-confirm="Retry this job?"
+                            aria-label="Retry job {{ job.function_name }}"
+                        >
+                            Retry
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No failed jobs.</p>
+    {% endif %}
+</section>
+{% endblock %}

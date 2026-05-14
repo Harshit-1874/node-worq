@@ -1,0 +1,11 @@
+Third-party materials (MIT)
+============================
+
+The files under `templates/` and `static/` in this package are adapted from the
+open-source Worq dashboard UI (HTML, CSS, HTMX, and client scripts).
+
+Copyright (c) 2026 Nitin Singh — those UI materials are used under the MIT
+License (<https://opensource.org/licenses/MIT>).
+
+This package’s own source code is under the copyright and license in `LICENSE`
+at the package root. This file is only for third-party UI attribution.

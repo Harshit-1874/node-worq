@@ -1,0 +1,68 @@
+{
+  "name": "node-worq",
+  "version": "0.1.0",
+  "description": "Mountable BullMQ job-queue dashboard for Node.js (Fastify)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Harshit-1874/node-worq.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Harshit-1874/node-worq/issues"
+  },
+  "homepage": "https://github.com/Harshit-1874/node-worq#readme",
+  "keywords": [
+    "bullmq",
+    "redis",
+    "dashboard",
+    "job-queue",
+    "fastify",
+    "worq"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "templates",
+    "static",
+    "LICENSE",
+    "README.md",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fastify/static": "^8.0.2",
+    "@fastify/view": "^11.0.0",
+    "@fastify/websocket": "^11.0.1",
+    "bullmq": "^5.34.5",
+    "fastify": "^5.2.0",
+    "fastify-plugin": "^5.0.1",
+    "ioredis": "^5.4.2",
+    "nunjucks": "^3.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/nunjucks": "^3.2.6",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}
