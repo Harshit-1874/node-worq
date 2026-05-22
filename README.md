@@ -1,4 +1,7 @@
 # node-worq
+[![npm version](https://img.shields.io/npm/v/node-worq.svg)](https://www.npmjs.com/package/node-worq)
+[![npm downloads](https://img.shields.io/npm/dm/node-worq.svg)](https://www.npmjs.com/package/node-worq)
+[![License](https://img.shields.io/npm/l/node-worq.svg)](LICENSE)
 
 Mountable **BullMQ job-queue dashboard** for Node.js — a Sidekiq-style UI you embed in your **Fastify** app. No separate process: one Redis connection, your queue names, live stats in the browser.
 
