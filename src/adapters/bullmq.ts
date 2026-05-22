@@ -80,7 +80,10 @@ export class BullMQAdapter implements QueueAdapter {
   private readonly queues = new Map<string, Queue>();
 
   constructor(opts: BullMQAdapterOptions) {
-    this.connection = new Redis(opts.connection);
+    this.connection =
+      typeof opts.connection === "string"
+        ? new Redis(opts.connection)
+        : new Redis(opts.connection);
     for (const name of opts.queueNames) {
       this.queues.set(name, new Queue(name, { connection: this.connection.duplicate() }));
     }
