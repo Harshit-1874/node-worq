@@ -1,8 +1,21 @@
 # node-worq
 
-Mountable **job-queue dashboard** for **Node.js** using **Fastify** and **BullMQ**: REST API, server-rendered UI (Nunjucks + HTMX), live stats over **WebSocket** and **SSE**, and a Redis-backed **BullMQ** adapter.
+Mountable **BullMQ job-queue dashboard** for Node.js — a Sidekiq-style UI you embed in your **Fastify** app. No separate process: one Redis connection, your queue names, live stats in the browser.
 
-Repository: [github.com/Harshit-1874/node-worq](https://github.com/Harshit-1874/node-worq). Bundled HTML/CSS/JS under `templates/` and `static/` includes third-party UI material used under MIT; see **`THIRD_PARTY_NOTICES.txt`**.
+## Features
+
+- **Dashboard UI** — queues, workers, scheduled & failed jobs, job detail, dark mode
+- **Live updates** — WebSocket with SSE fallback
+- **REST API** — same routes whether you use the UI or call it programmatically
+- **Write actions** (optional) — retry, delete, run scheduled jobs now, bulk ops
+- **BullMQ adapter** — reads the same Redis keys your workers use
+
+## Requirements
+
+- Node **20+**
+- **Redis** (same instance as BullMQ)
+- **Fastify 5** host app
+- **BullMQ** workers on the queues you configure
 
 ## Install
 
@@ -10,9 +23,7 @@ Repository: [github.com/Harshit-1874/node-worq](https://github.com/Harshit-1874/
 npm install node-worq
 ```
 
-Requires **Node 20+**, **Redis**, and a **Fastify 5** app. Point the adapter at the same Redis and queue names your BullMQ workers use.
-
-## Quick start (Fastify + BullMQ)
+## Quick start
 
 ```typescript
 import Fastify from "fastify";
@@ -21,84 +32,89 @@ import { createDashboard, BullMQAdapter } from "node-worq";
 const app = Fastify();
 
 const adapter = new BullMQAdapter({
-  connection: { host: "127.0.0.1", port: 6379 },
-  queueNames: ["email", "reports"],
+  connection: {
+    host: process.env.REDIS_HOST ?? "127.0.0.1",
+    port: Number(process.env.REDIS_PORT) || 6379,
+    password: process.env.REDIS_PASSWORD, // omit if not used
+  },
+  queueNames: ["email", "reports"], // must match your BullMQ queue names
 });
 
 await app.register(createDashboard, {
   prefix: "/worq",
   adapter,
   title: "Worq",
-  allowWrite: false,
-  basePath: "/worq",
+  allowWrite: false, // set true to enable retry / delete / run-now in the UI
+  basePath: "/worq", // must match prefix
 });
+
+await app.listen({ port: 3000 });
 ```
 
-Set **`basePath`** to the same value as the Fastify **`prefix`** so links, static files, `/api/*`, `/ws/stats`, and HTMX calls resolve correctly.
+Open **http://localhost:3000/worq**.
 
-### Password-protected or remote Redis
-
-`connection` is [ioredis `RedisOptions`](https://github.com/redis/ioredis#connect-to-redis). Use the **same** credentials as your BullMQ workers:
+### Redis URL or TLS
 
 ```typescript
-const adapter = new BullMQAdapter({
-  connection: {
-    host: "redis.example.com",
-    port: 6379,
-    password: process.env.REDIS_PASSWORD,
-    username: process.env.REDIS_USERNAME, // Redis 6+ ACL, if required
-    // tls: {},                          // managed Redis (e.g. TLS)
-  },
-  queueNames: ["email"],
-});
-```
-
-Or a single URL:
-
-```typescript
+// URL (password in the string)
 connection: process.env.REDIS_URL!, // redis://:password@host:6379/0
+
+// Or full ioredis options — username for Redis ACL, tls for managed Redis
+connection: {
+  host: "redis.example.com",
+  port: 6379,
+  password: process.env.REDIS_PASSWORD,
+  username: process.env.REDIS_USERNAME,
+  tls: {},
+},
 ```
 
-Local dev with env vars:
+Use the **same** Redis settings as your BullMQ workers.
 
-```bash
-REDIS_PASSWORD=secret npm run dev
-# or
-REDIS_URL='redis://:secret@127.0.0.1:6379' npm run dev
-```
+## Configuration
 
-If the password is wrong or Redis is unreachable, the dashboard will error when loading queue stats (check server logs).
+| Option | Description |
+|--------|-------------|
+| `prefix` | URL path where the dashboard is mounted (e.g. `/worq`) |
+| `basePath` | Same as `prefix` — used for links, static assets, and HTMX |
+| `adapter` | `BullMQAdapter` instance |
+| `title` | Header title in the UI |
+| `allowWrite` | `false` by default; enable for retry/delete/enqueue actions |
 
-## Typed HTTP client
-
-Use **`createWorqClient`** against any server that exposes this package’s REST API (same routes and JSON shapes), for example another deployment of this dashboard:
+## REST API (programmatic)
 
 ```typescript
 import { createWorqClient } from "node-worq";
 
 const client = createWorqClient({
-  baseUrl: "https://example.com/worq",
-  headers: { Authorization: "Basic ..." },
+  baseUrl: "https://api.example.com/worq",
 });
 
 const queues = await client.listQueues();
+const stats = await client.getStats();
+await client.retryJob("job-id");
 ```
 
-## Scope (v0.1)
+Main routes: `/api/queues`, `/api/jobs/:id`, `/api/failed`, `/api/scheduled`, `/api/stats`, `/api/bulk/retry`, `/ws/stats`, `/api/sse/stats`.
 
-- **BullMQ** is the supported queue backend in this package.
-- **Metrics**, **search**, and **cron** endpoints exist; the BullMQ adapter may return empty or minimal data until extended.
-- **Workers** health is a placeholder where BullMQ does not expose the same signals as other systems.
+## Current limitations (v0.1)
 
-## Publishing to npm
+- **BullMQ only** — no Celery/RQ adapters
+- **Search, metrics, cron** — API and UI exist; BullMQ adapter returns minimal/empty data for now
+- **Worker health** — per-queue status is a best-effort placeholder (not full BullMQ worker registry)
+- **Auth, audit, alerts** — not included yet
 
-1. **Account**: [Create an npm account](https://www.npmjs.com/signup) and run `npm login`.
-2. **Name**: The package is published as **`node-worq`**. If you ever need an alternate public name, use a scoped package (e.g. `@your-scope/node-worq`) and `npm publish --access public`.
-3. **Build**: From this directory, `npm run build` (also runs on `prepublishOnly` before publish).
-4. **Dry run**: `npm publish --dry-run` and confirm the pack includes `dist/`, `templates/`, `static/`, `LICENSE`, `README.md`, and `THIRD_PARTY_NOTICES.txt`.
-5. **Publish**: `npm publish` (or `npm publish --access public` for a new scoped public package).
-6. **Versions**: `npm version patch|minor|major` then `npm publish`.
+## Development (this repo)
+
+```bash
+git clone https://github.com/Harshit-1874/node-worq.git
+cd node-worq
+npm install
+npm run dev          # http://127.0.0.1:3333/worq
+npm run seed         # sample jobs (optional)
+npm run worker       # process demo queue (optional)
+```
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). Third-party UI notices: [THIRD_PARTY_NOTICES.txt](./THIRD_PARTY_NOTICES.txt).
+MIT — see [LICENSE](./LICENSE). UI assets under `templates/` and `static/` include third-party material; see [THIRD_PARTY_NOTICES.txt](./THIRD_PARTY_NOTICES.txt).
