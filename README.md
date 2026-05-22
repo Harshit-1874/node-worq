@@ -3,7 +3,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/node-worq.svg)](https://www.npmjs.com/package/node-worq)
 [![License](https://img.shields.io/npm/l/node-worq.svg)](LICENSE)
 
-Mountable **BullMQ job-queue dashboard** for Node.js — a Sidekiq-style UI you embed in your **Fastify** app. No separate process: one Redis connection, your queue names, live stats in the browser.
+Mountable **BullMQ job-queue dashboard** for Node.js — a Sidekiq-style UI you embed in your **Fastify** or **Express** app. No separate process: one Redis connection, your queue names, live stats in the browser.
 
 ## Features
 
@@ -17,7 +17,7 @@ Mountable **BullMQ job-queue dashboard** for Node.js — a Sidekiq-style UI you 
 
 - Node **20+**
 - **Redis** (same instance as BullMQ)
-- **Fastify 5** host app
+- **Fastify 5** or **Express 4/5** host app
 - **BullMQ** workers on the queues you configure
 
 ## Install
@@ -56,6 +56,41 @@ await app.listen({ port: 3000 });
 
 Open **http://localhost:3000/worq**.
 
+## Express
+
+Install the peer dependency:
+
+```bash
+npm install node-worq express
+```
+
+```typescript
+import http from "node:http";
+import express from "express";
+import { createWorqRouter, BullMQAdapter } from "node-worq";
+
+const adapter = new BullMQAdapter({
+  connection: { host: "127.0.0.1", port: 6379 },
+  queueNames: ["email"],
+});
+
+const { router, attachWebSocket } = createWorqRouter({
+  adapter,
+  basePath: "/worq",
+  allowWrite: false,
+});
+
+const app = express();
+app.use("/worq", router);
+
+const server = http.createServer(app);
+attachWebSocket(server); // required for live stat cards
+
+server.listen(3000);
+```
+
+`basePath` must match the mount path (`/worq`). Call **`attachWebSocket(server)`** with the same HTTP server so `/worq/ws/stats` works.
+
 ### Redis URL or TLS
 
 ```typescript
@@ -78,8 +113,8 @@ Use the **same** Redis settings as your BullMQ workers.
 
 | Option | Description |
 |--------|-------------|
-| `prefix` | URL path where the dashboard is mounted (e.g. `/worq`) |
-| `basePath` | Same as `prefix` — used for links, static assets, and HTMX |
+| `prefix` / mount path | URL path where the dashboard is mounted (e.g. `/worq`) |
+| `basePath` | Same as mount path — used for links, static assets, WebSocket, and HTMX |
 | `adapter` | `BullMQAdapter` instance |
 | `title` | Header title in the UI |
 | `allowWrite` | `false` by default; enable for retry/delete/enqueue actions |
@@ -100,7 +135,14 @@ await client.retryJob("job-id");
 
 Main routes: `/api/queues`, `/api/jobs/:id`, `/api/failed`, `/api/scheduled`, `/api/stats`, `/api/bulk/retry`, `/ws/stats`, `/api/sse/stats`.
 
-## Current limitations (v0.1)
+## Integration
+
+| Framework | Export | Mount |
+|-----------|--------|-------|
+| Fastify 5 | `createDashboard` | `app.register(createDashboard, { prefix, basePath, adapter, ... })` |
+| Express 4/5 | `createWorqRouter` | `app.use("/worq", router)` + `attachWebSocket(server)` |
+
+## Current limitations
 
 - **BullMQ only** — no Celery/RQ adapters
 - **Search, metrics, cron** — API and UI exist; BullMQ adapter returns minimal/empty data for now
@@ -113,7 +155,8 @@ Main routes: `/api/queues`, `/api/jobs/:id`, `/api/failed`, `/api/scheduled`, `/
 git clone https://github.com/Harshit-1874/node-worq.git
 cd node-worq
 npm install
-npm run dev          # http://127.0.0.1:3333/worq
+npm run dev          # Fastify — http://127.0.0.1:3333/worq
+npm run dev:express  # Express — http://127.0.0.1:3334/worq
 npm run seed         # sample jobs (optional)
 npm run worker       # process demo queue (optional)
 ```

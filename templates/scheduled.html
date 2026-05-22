@@ -35,18 +35,20 @@
                     <td>{{ job.remaining_seconds | round }}s</td>
                     {% if allowWrite %}
                     <td class="actions">
+                        <div id="sched-actions-{{ job.job_id }}" class="action-group">
                         <button type="button" class="btn btn-sm"
                             hx-post="{{ rootPath }}/api/scheduled/{{ job.job_id }}/enqueue"
-                            hx-target="#sched-row-{{ job.job_id }}"
-                            hx-swap="outerHTML"
+                            hx-target="#sched-actions-{{ job.job_id }}"
+                            hx-swap="innerHTML"
                             hx-confirm="Run this job now?"
                             aria-label="Run job {{ job.function_name }} now">Run Now</button>
                         <button type="button" class="btn btn-sm btn-danger"
                             hx-delete="{{ rootPath }}/api/jobs/{{ job.job_id }}"
                             hx-target="#sched-row-{{ job.job_id }}"
-                            hx-swap="outerHTML"
+                            hx-swap="delete"
                             hx-confirm="Delete this scheduled job?"
                             aria-label="Delete job {{ job.function_name }}">Delete</button>
+                        </div>
                     </td>
                     {% endif %}
                 </tr>

@@ -1,7 +1,7 @@
 {
   "name": "node-worq",
-  "version": "0.1.1",
-  "description": "Mountable BullMQ job-queue dashboard for Node.js (Fastify)",
+  "version": "0.2.0",
+  "description": "Mountable BullMQ job-queue dashboard for Node.js (Fastify and Express)",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -16,6 +16,7 @@
     "redis",
     "dashboard",
     "job-queue",
+    "express",
     "fastify",
     "worq"
   ],
@@ -37,17 +38,24 @@
     "static",
     "LICENSE",
     "README.md",
+    "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.txt"
   ],
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "npm run build",
     "dev": "npm run build && node examples/local-dev.mjs",
+    "dev:express": "npm run build && node examples/local-dev-express.mjs",
     "seed": "node examples/seed-jobs.mjs",
     "worker": "node examples/local-worker.mjs"
   },
   "peerDependencies": {
+    "express": "^4.18.0 || ^5.0.0",
     "fastify": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": { "optional": true },
+    "fastify": { "optional": true }
   },
   "engines": {
     "node": ">=20"
@@ -58,13 +66,17 @@
     "@fastify/websocket": "^11.0.1",
     "bullmq": "^5.34.5",
     "fastify": "^5.2.0",
+    "ws": "^8.18.0",
     "fastify-plugin": "^5.0.1",
     "ioredis": "^5.4.2",
     "nunjucks": "^3.2.4"
   },
   "devDependencies": {
+    "express": "^4.21.2",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
     "@types/nunjucks": "^3.2.6",
+    "@types/ws": "^8.5.13",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2"
   }

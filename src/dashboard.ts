@@ -5,40 +5,27 @@ import websocket from "@fastify/websocket";
 import nunjucks from "nunjucks";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { QueueAdapter } from "./adapter.js";
 import { installWorqFilters, templatesRoot } from "./nunjucksEnv.js";
+import type { WorqDashboardOptions } from "./options.js";
 import { registerApiRoutes } from "./registerApi.js";
 import { registerPageRoutes } from "./registerPages.js";
-import { WriteGuard } from "./writeGuard.js";
+import { createWorqState } from "./state.js";
+import { pushStatsJson, STATS_PUSH_MS } from "./stats.js";
+
+export type { WorqDashboardOptions } from "./options.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const staticRoot = join(here, "..", "static");
-const PUSH_MS = 2000;
-
-export interface WorqDashboardOptions {
-  adapter: QueueAdapter;
-  title?: string;
-  allowWrite?: boolean;
-  basePath?: string;
-}
-
-async function pushStatsJson(adapter: QueueAdapter): Promise<string> {
-  const stats = await adapter.getStats();
-  return JSON.stringify(stats);
-}
 
 export default fastifyPlugin<WorqDashboardOptions>(
   async (fastify, opts) => {
-    const allowWrite = opts.allowWrite ?? false;
-    const basePath = (opts.basePath ?? "").replace(/\/$/, "") || "";
-    const title = opts.title ?? "Worq";
-    const guarded = new WriteGuard(opts.adapter, allowWrite);
+    const state = createWorqState(opts);
 
     fastify.decorate("worq", {
-      adapter: guarded,
-      title,
-      allowWrite,
-      basePath,
+      adapter: state.adapter,
+      title: state.title,
+      allowWrite: state.allowWrite,
+      basePath: state.basePath,
     });
 
     // HTMX POST/DELETE with no body often omit Content-Type; Fastify would return 415.
@@ -96,7 +83,7 @@ export default fastifyPlugin<WorqDashboardOptions>(
         try {
           while (!reply.raw.destroyed) {
             reply.raw.write(`data: ${await pushStatsJson(adapter)}\n\n`);
-            await new Promise((r) => setTimeout(r, PUSH_MS));
+            await new Promise((r) => setTimeout(r, STATS_PUSH_MS));
           }
         } catch {
           /* */
@@ -117,7 +104,7 @@ export default fastifyPlugin<WorqDashboardOptions>(
             socket.close();
           }
         })();
-      }, PUSH_MS);
+      }, STATS_PUSH_MS);
       socket.on("close", () => clearInterval(id));
     });
 
@@ -128,7 +115,7 @@ export default fastifyPlugin<WorqDashboardOptions>(
     });
 
     fastify.addHook("onClose", async () => {
-      await guarded.close();
+      await state.adapter.close();
     });
   },
   {

@@ -63,18 +63,20 @@
                     <td>{{ job.job_try }}</td>
                     {% if allowWrite %}
                     <td class="actions">
+                        <div id="row-actions-{{ job.job_id }}" class="action-group">
                         <button type="button" class="btn btn-sm"
                             hx-post="{{ rootPath }}/api/jobs/{{ job.job_id }}/retry"
-                            hx-target="#row-{{ job.job_id }}"
-                            hx-swap="outerHTML"
+                            hx-target="#row-actions-{{ job.job_id }}"
+                            hx-swap="innerHTML"
                             hx-confirm="Retry this job?"
                             aria-label="Retry job {{ job.function_name }}">Retry</button>
                         <button type="button" class="btn btn-sm btn-danger"
                             hx-delete="{{ rootPath }}/api/jobs/{{ job.job_id }}"
                             hx-target="#row-{{ job.job_id }}"
-                            hx-swap="outerHTML"
+                            hx-swap="delete"
                             hx-confirm="Delete this job?"
                             aria-label="Delete job {{ job.function_name }}">Delete</button>
+                        </div>
                     </td>
                     {% endif %}
                 </tr>
