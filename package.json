@@ -1,11 +1,11 @@
 {
   "name": "node-worq",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mountable BullMQ job-queue dashboard for Node.js (Fastify)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Harshit-1874/node-worq.git"
+    "url": "git+https://github.com/Harshit-1874/node-worq.git"
   },
   "bugs": {
     "url": "https://github.com/Harshit-1874/node-worq/issues"
