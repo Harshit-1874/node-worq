@@ -41,7 +41,10 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "dev": "npm run build && node examples/local-dev.mjs",
+    "seed": "node examples/seed-jobs.mjs",
+    "worker": "node examples/local-worker.mjs"
   },
   "peerDependencies": {
     "fastify": "^5.0.0"

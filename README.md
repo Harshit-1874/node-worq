@@ -36,6 +36,39 @@ await app.register(createDashboard, {
 
 Set **`basePath`** to the same value as the Fastify **`prefix`** so links, static files, `/api/*`, `/ws/stats`, and HTMX calls resolve correctly.
 
+### Password-protected or remote Redis
+
+`connection` is [ioredis `RedisOptions`](https://github.com/redis/ioredis#connect-to-redis). Use the **same** credentials as your BullMQ workers:
+
+```typescript
+const adapter = new BullMQAdapter({
+  connection: {
+    host: "redis.example.com",
+    port: 6379,
+    password: process.env.REDIS_PASSWORD,
+    username: process.env.REDIS_USERNAME, // Redis 6+ ACL, if required
+    // tls: {},                          // managed Redis (e.g. TLS)
+  },
+  queueNames: ["email"],
+});
+```
+
+Or a single URL:
+
+```typescript
+connection: process.env.REDIS_URL!, // redis://:password@host:6379/0
+```
+
+Local dev with env vars:
+
+```bash
+REDIS_PASSWORD=secret npm run dev
+# or
+REDIS_URL='redis://:secret@127.0.0.1:6379' npm run dev
+```
+
+If the password is wrong or Redis is unreachable, the dashboard will error when loading queue stats (check server logs).
+
 ## Typed HTTP client
 
 Use **`createWorqClient`** against any server that exposes this package’s REST API (same routes and JSON shapes), for example another deployment of this dashboard:

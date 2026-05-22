@@ -46,7 +46,7 @@
                     <td>
                         <details>
                             <summary class="error-preview">
-                                {% if job.error and ("unable to serialize" in (job.error | lower)) %}
+                                {% if job.error | contains("unable to serialize") %}
                                 <span class="text-muted">Error not serializable — check worker logs</span>
                                 {% else %}
                                 {{ job.error | truncate(80) }}

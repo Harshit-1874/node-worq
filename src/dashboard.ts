@@ -41,6 +41,28 @@ export default fastifyPlugin<WorqDashboardOptions>(
       basePath,
     });
 
+    // HTMX POST/DELETE with no body often omit Content-Type; Fastify would return 415.
+    fastify.removeContentTypeParser("application/json");
+    fastify.addContentTypeParser(
+      "application/json",
+      { parseAs: "string" },
+      (_req, body, done) => {
+        try {
+          const text = typeof body === "string" ? body : body.toString();
+          done(null, text.length > 0 ? JSON.parse(text) : {});
+        } catch (err) {
+          done(err as Error, undefined);
+        }
+      },
+    );
+    fastify.addHook("onRequest", async (request) => {
+      if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) return;
+      const ct = request.headers["content-type"];
+      if (!ct || !String(ct).trim()) {
+        request.headers["content-type"] = "application/json";
+      }
+    });
+
     await fastify.register(fastifyView, {
       root: templatesRoot(),
       engine: { nunjucks },
@@ -50,7 +72,8 @@ export default fastifyPlugin<WorqDashboardOptions>(
           installWorqFilters(env);
         },
       },
-      includeViewExtension: true,
+      includeViewExtension: false,
+      viewExt: "html",
     });
 
     await fastify.register(fastifyStatic, {
@@ -108,5 +131,9 @@ export default fastifyPlugin<WorqDashboardOptions>(
       await guarded.close();
     });
   },
-  { name: "node-worq" },
+  {
+    name: "node-worq",
+    fastify: "5.x",
+    encapsulate: true,
+  },
 );

@@ -31,20 +31,27 @@
         <nav class="navbar-links" aria-label="Main navigation">
             <ul>
                 {% set nav_items = [
-                    ("Dashboard", "/"),
-                    ("Queues", "/queues"),
-                    ("Workers", "/workers"),
-                    ("Scheduled", "/scheduled"),
-                    ("Failed", "/failed"),
-                    ("Cron", "/cron"),
+                    ['Dashboard', '/'],
+                    ['Queues', '/queues'],
+                    ['Workers', '/workers'],
+                    ['Scheduled', '/scheduled'],
+                    ['Failed', '/failed'],
+                    ['Cron', '/cron']
                 ] %}
                 {% set current_path = urlPath %}
                 {% set root = rootPath %}
-                {% for label, path in nav_items %}
-                {% set full_path = root + path if path != "/" else root + "/" %}
+                {% for item in nav_items %}
+                {% set label = item[0] %}
+                {% set path = item[1] %}
+                {% if path == "/" %}
+                {% set full_path = root + "/" %}
+                {% else %}
+                {% set full_path = root + path %}
+                {% endif %}
+                {% set full_path_norm = full_path | rstrip("/") %}
                 <li>
                     <a href="{{ full_path }}"
-                       {% if current_path == full_path.rstrip("/") or (path == "/" and current_path == root) %}
+                       {% if current_path == full_path_norm or (path == "/" and (current_path == root or current_path == root + "/")) %}
                        class="nav-active" aria-current="page"
                        {% endif %}
                     >{{ label }}</a>

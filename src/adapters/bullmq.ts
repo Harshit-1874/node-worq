@@ -20,7 +20,8 @@ import type {
 } from "../types.js";
 
 export interface BullMQAdapterOptions {
-  connection: RedisOptions;
+  /** ioredis connection options or a `redis://` URL (with password in the URL if needed). */
+  connection: RedisOptions | string;
   queueNames: string[];
 }
 

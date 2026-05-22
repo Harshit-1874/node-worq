@@ -49,6 +49,26 @@ export function installWorqFilters(env: nunjucks.Environment): void {
       return String(val);
     }
   });
+
+  env.addFilter("truncate", (val: unknown, len = 80): string => {
+    const s = String(val ?? "");
+    const n = Number(len) || 80;
+    return s.length <= n ? s : `${s.slice(0, n)}…`;
+  });
+
+  env.addFilter("contains", (val: unknown, needle: unknown): boolean => {
+    if (val == null || needle == null) return false;
+    return String(val).toLowerCase().includes(String(needle).toLowerCase());
+  });
+
+  env.addFilter("rstrip", (val: unknown, chars = "/"): string => {
+    let s = String(val ?? "");
+    const ch = String(chars ?? "/");
+    while (s.length > 0 && ch.includes(s.slice(-1))) {
+      s = s.slice(0, -1);
+    }
+    return s;
+  });
 }
 
 export function createNunjucksEnv(): nunjucks.Environment {
